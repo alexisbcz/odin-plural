@@ -2,6 +2,7 @@ package plural_tests
 
 import plural ".."
 import "core:mem"
+import "core:strings"
 import "core:testing"
 import "core:text/i18n"
 
@@ -121,5 +122,43 @@ test_i18n_truncated_catalog_reports_error :: proc(t: ^testing.T) {
 		catalog, err := i18n.parse_mo(MO_RU[:40], pluralizer = plural.i18n_pluralizer("ru"), allocator = allocator)
 		testing.expect(t, err != .None, "a truncated .mo file must not parse")
 		i18n.destroy(catalog, allocator)
+	})
+}
+
+// TS_PL is a Qt Linguist catalog with the three Polish plural forms, in the CLDR order one, few, many.
+TS_PL :: `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="pl_PL">
+<context>
+    <name>Files</name>
+    <message numerus="yes">
+        <source>%n file(s)</source>
+        <translation>
+            <numerusform>%n plik</numerusform>
+            <numerusform>%n pliki</numerusform>
+            <numerusform>%n plików</numerusform>
+        </translation>
+    </message>
+</context>
+</TS>
+`
+
+@(test)
+test_i18n_qt_linguist_catalog :: proc(t: ^testing.T) {
+	with_tracking(t, proc(t: ^testing.T, allocator: mem.Allocator) {
+		// core:text/i18n parses Qt files in place and frees the buffer, so it gets its own copy.
+		data := transmute([]u8)strings.clone(TS_PL, allocator)
+		catalog, err := i18n.parse_qt(data, pluralizer = plural.i18n_pluralizer("pl"), allocator = allocator)
+		testing.expect_value(t, err, i18n.Error.None)
+		defer i18n.destroy(catalog, allocator)
+
+		cases := [?]struct {
+			n:    int,
+			want: string,
+		}{{1, "%n plik"}, {3, "%n pliki"}, {5, "%n plików"}, {14, "%n plików"}, {24, "%n pliki"}, {0, "%n plików"}}
+		for c in cases {
+			got := i18n.get_n("Files", "%n file(s)", c.n, catalog)
+			testing.expectf(t, got == c.want, "pl qt %d: got %q, want %q", c.n, got, c.want)
+		}
 	})
 }
