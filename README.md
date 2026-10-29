@@ -99,6 +99,13 @@ main :: proc() {
 
 The slot number is the position of the category among the categories that whole numbers can select in that locale, in CLDR order: zero, one, two, few, many, other. For Russian that is one = 0, few = 1, many = 2. For Arabic it's zero = 0 through other = 5. This is the plural form order that CLDR-based tools such as Weblate write into `.po` files. `integer_categories(locale)` returns the categories that the slots number.
 
+Qt Linguist catalogs work the same way through `i18n.parse_qt`. That procedure edits the bytes you pass and frees them when you call `i18n.destroy`, so pass a copy made with the catalog's allocator, not `#load` data:
+
+```odin
+data := transmute([]u8)strings.clone(TS_SOURCE)
+catalog, err := i18n.parse_qt(data, pluralizer = plural.i18n_pluralizer("pl"))
+```
+
 `core:text/i18n` ignores the `Plural-Forms` header of a catalog, so the pluralizer alone decides the slot. Some legacy headers use another order. Latvian files from older tools, for example, put zero last. Check the header of your catalog when you switch to this package.
 
 ## API overview
@@ -119,6 +126,8 @@ The slot number is the position of the category among the categories that whole 
 | `operands(n)` | CLDR operands `n i v w f t e` of a string, `int` or `f64` |
 | `Parse_Error` | Why a number string didn't parse |
 | `CLDR_VERSION` | The CLDR release the tables come from |
+
+The `int` and `f64` forms take exactly those types. Cast other numeric types first, for example `plural.cardinal("ru", int(size))` for an `i64` file size.
 
 The string forms of `cardinal` and `ordinal` return `(Category, Parse_Error)`. On an error the category is `.Other`. The `f64` forms return `.Other` for NaN and infinities.
 
@@ -142,7 +151,7 @@ The exponent marker can be `c`, `e`, `C` or `E`. Negative numbers use their abso
 
 Locale matching ignores case, treats `_` like `-`, drops a POSIX suffix such as `.UTF-8` or `@euro`, and removes subtags from the right until it finds a rule set. `pt_BR` uses `pt`, `pt_PT` has its own rules, and `zh-Hant-TW` uses `zh`. A tag that matches nothing uses the CLDR root rules, where every number is `.Other`, and `match_locale` returns `false`.
 
-The tables cover `af`, `am`, `ar`, `az`, `be`, `bg`, `bn`, `bs`, `ca`, `cs`, `cy`, `da`, `de`, `el`, `en`, `es`, `et`, `eu`, `fa`, `fi`, `fil`, `fr`, `ga`, `gl`, `gu`, `he`, `hi`, `hr`, `hu`, `hy`, `id`, `is`, `it`, `ja`, `ka`, `kk`, `km`, `kn`, `ko`, `ky`, `lo`, `lt`, `lv`, `mk`, `ml`, `mn`, `mr`, `ms`, `my`, `nb`, `ne`, `nl`, `nn`, `pa`, `pl`, `pt`, `pt-PT`, `ro`, `ru`, `si`, `sk`, `sl`, `sq`, `sr`, `sv`, `sw`, `ta`, `te`, `th`, `tr`, `uk`, `ur`, `uz`, `vi`, `yue` and `zh and zu`, plus the legacy codes `in`, `iw`, `no` and `tl`.
+The tables cover `af`, `am`, `ar`, `az`, `be`, `bg`, `bn`, `bs`, `ca`, `cs`, `cy`, `da`, `de`, `el`, `en`, `es`, `et`, `eu`, `fa`, `fi`, `fil`, `fr`, `ga`, `gl`, `gu`, `he`, `hi`, `hr`, `hu`, `hy`, `id`, `is`, `it`, `ja`, `ka`, `kk`, `km`, `kn`, `ko`, `ky`, `lo`, `lt`, `lv`, `mk`, `ml`, `mn`, `mr`, `ms`, `my`, `nb`, `ne`, `nl`, `nn`, `pa`, `pl`, `pt`, `pt-PT`, `ro`, `ru`, `si`, `sk`, `sl`, `sq`, `sr`, `sv`, `sw`, `ta`, `te`, `th`, `tr`, `uk`, `ur`, `uz`, `vi`, `yue`, `zh` and `zu`, plus the legacy codes `in`, `iw`, `no` and `tl`.
 
 ## Where the rules come from
 

@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-29
+
+### Fixed
+
+- `Operands.n` is now the correctly rounded value for input with an exponent. `operands("2.3c2").n` used to be 229.99999999999997 instead of 230. The plural categories didn't change, because the rules never read `n`.
+
+### Documentation
+
+- Fix the list of supported locales in the README, which ran `zh` and `zu` together.
+- Explain how to pass a Qt Linguist catalog to `i18n.parse_qt`, which edits and frees the bytes you give it.
+- Note that the `int` and `f64` forms need a cast for other numeric types.
+
 ## [0.1.0] - 2026-10-29
 
 ### Added
@@ -18,5 +30,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `match_locale` and `supported_locales`, with fallback from `pt_BR` and `pt-BR` to `pt`, then to the CLDR root rules.
 - `tools/gen_rules.py`, which writes the rule tables and the CLDR sample tests from `plurals.xml` and `ordinals.xml`.
 
-[Unreleased]: https://github.com/alexisbcz/odin-plural/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/alexisbcz/odin-plural/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/alexisbcz/odin-plural/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/alexisbcz/odin-plural/releases/tag/v0.1.0
