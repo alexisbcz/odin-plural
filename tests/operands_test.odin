@@ -82,6 +82,21 @@ test_operands_n_value :: proc(t: ^testing.T) {
 }
 
 @(test)
+test_operands_n_with_exponent_is_correctly_rounded :: proc(t: ^testing.T) {
+	// Scaling the parsed mantissa by 10^e rounds twice: "2.3c2" used to
+	// give n = 229.99999999999997 while i was 230.
+	cases := [?]struct {
+		s: string,
+		n: f64,
+	}{{"2.3c2", 230}, {"1.15c2", 115}, {"4.35c2", 435}, {"1.20050c3", 1200.5}, {"-2.3e2", 230}, {"0.7c1", 7}}
+	for c in cases {
+		o, err := plural.operands(c.s)
+		testing.expect_value(t, err, plural.Parse_Error.None)
+		testing.expectf(t, o.n == c.n, "%q: n = %.17g, want %v", c.s, o.n, c.n)
+	}
+}
+
+@(test)
 test_operands_huge_integer_keeps_low_digits :: proc(t: ^testing.T) {
 	o, err := plural.operands("123456789012345678901")
 	testing.expect_value(t, err, plural.Parse_Error.None)

@@ -255,14 +255,31 @@ is_exponent_marker :: #force_inline proc "contextless" (c: u8) -> bool {
 	return c == 'c' || c == 'e' || c == 'C' || c == 'E'
 }
 
-// decimal_value computes n from the digits before the exponent. Precision doesn't matter, because the rules never read n.
+/*
+decimal_value computes n from the digits before the exponent and the exponent.
+The rules never read n, but callers do, so it parses "<mantissa>e<exponent>"
+in one step and gets the correctly rounded f64. Multiplying the parsed
+mantissa by 10^exponent would round twice: "2.3c2" gave 229.99999999999997.
+*/
 @(private)
 decimal_value :: proc(mantissa: string, exponent: int) -> f64 {
-	value, _ := strconv.parse_f64(mantissa)
-	if exponent > 0 {
-		value *= math.pow10(f64(exponent))
+	if exponent == 0 {
+		value, _ := strconv.parse_f64(mantissa)
+		return value
 	}
-	return value
+	// "e" plus at most 4 exponent digits, because exponent <= MAX_EXPONENT.
+	buf: [512]u8
+	if len(mantissa) + 5 <= len(buf) {
+		k := copy(buf[:], mantissa)
+		buf[k] = 'e'
+		k += 1
+		k += len(strconv.write_int(buf[k:], i64(exponent), 10))
+		value, _ := strconv.parse_f64(string(buf[:k]))
+		return value
+	}
+	// A mantissa this long is rare; scaling it can be off by one ulp.
+	value, _ := strconv.parse_f64(mantissa)
+	return value * math.pow10(f64(exponent))
 }
 
 // slot_of returns the position of `category` among `set`, in Category order. It is the i18n plural slot.
